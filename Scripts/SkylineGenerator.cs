@@ -14,6 +14,9 @@ public class SkylineGenerator : MonoBehaviour
     [SerializeField]
 	FloatRange gapLength, sequenceLength;
 
+    [SerializeField]
+	SkylineObject gapPrefab;
+
     const float border = 10f;
     float sequenceEndX;
 
@@ -31,7 +34,10 @@ public class SkylineGenerator : MonoBehaviour
 
 		while (endPosition.x < visibleX.max)
 		{
-			endPosition.y = altitude.RandomValue;
+			if (endPosition.x > sequenceEndX)
+			{
+				StartNewSequence(gapLength.RandomValue, sequenceLength.RandomValue);
+			}
 			rightmost = rightmost.Next = GetInstance();
 			endPosition = rightmost.PlaceAfter(endPosition);
 		}
@@ -44,7 +50,7 @@ public class SkylineGenerator : MonoBehaviour
 		return instance;
 	}
 
-    public void StartNewGame (TrackingCamera view)
+    public SkylineObject StartNewGame (TrackingCamera view)
 	{
 		while (leftmost != null)
 		{
@@ -58,11 +64,20 @@ public class SkylineGenerator : MonoBehaviour
 		leftmost = rightmost = GetInstance();
 		endPosition = rightmost.PlaceAfter(endPosition);
 		FillView(view);
+        return leftmost;
 	}
-    
+
     void StartNewSequence (float gap, float sequence)
 	{
+        if (gapPrefab != null)
+		{
+			rightmost = rightmost.Next = gapPrefab.GetInstance();
+			rightmost.transform.SetParent(transform, false);
+			rightmost.FillGap(endPosition, gap);
+		}
 		endPosition.x += gap;
 		endPosition.y = altitude.RandomValue;
 		sequenceEndX = endPosition.x + sequence;
 	}
+
+}

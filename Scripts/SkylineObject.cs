@@ -8,6 +8,7 @@ public class SkylineObject : MonoBehaviour
 	[SerializeField, Min(1f)]
 	float extents;
 
+
     public SkylineObject Next
 	{ get; set; }
 
@@ -16,6 +17,8 @@ public class SkylineObject : MonoBehaviour
 
     [System.NonSerialized]
 	Stack<SkylineObject> pool;
+
+
 
 	#if UNITY_EDITOR
         static List<Stack<SkylineObject>> pools;
@@ -67,14 +70,19 @@ public class SkylineObject : MonoBehaviour
 		return instance;
 	}
 
-    
+    public void FillGap (Vector3 position, float gap)
+	{
+		extents = gap * 0.5f;
+		position.x += extents;
+		transform.localPosition = position;
+	}
     public SkylineObject Recycle ()
 	{
 		pool.Push(this);
 		gameObject.SetActive(false);
 		SkylineObject n = Next;
 		Next = null;
-		return n;
+		return n; 
 	}
 
     public FloatRange GapY => gapY.Shift(transform.localPosition.y);
