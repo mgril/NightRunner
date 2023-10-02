@@ -14,17 +14,24 @@ public class SkylineGenerator : MonoBehaviour
     [SerializeField]
 	FloatRange gapLength, sequenceLength;
 
+    [SerializeField, Min(0f)]
+	float maxYDifference;
+
     [SerializeField]
 	SkylineObject gapPrefab;
 
+    [SerializeField]
+	bool singleSequenceStart;
+
     const float border = 10f;
     float sequenceEndX;
+    
 
     Vector3 endPosition;
 
 	SkylineObject leftmost, rightmost;
 
-	public void FillView (TrackingCamera view)
+	public void FillView (TrackingCamera view, float extraGapLength = 0f, float extraSequenceLength = 0f)
 	{
 		FloatRange visibleX = view.VisibleX(distance).GrowExtents(border);
 		while (leftmost != rightmost && leftmost.MaxX < visibleX.min)
@@ -36,7 +43,7 @@ public class SkylineGenerator : MonoBehaviour
 		{
 			if (endPosition.x > sequenceEndX)
 			{
-				StartNewSequence(gapLength.RandomValue, sequenceLength.RandomValue);
+				StartNewSequence(gapLength.RandomValue + extraGapLength, sequenceLength.RandomValue + extraSequenceLength);
 			}
 			rightmost = rightmost.Next = GetInstance();
 			endPosition = rightmost.PlaceAfter(endPosition);
@@ -59,7 +66,7 @@ public class SkylineGenerator : MonoBehaviour
 
 		FloatRange visibleX = view.VisibleX(distance).GrowExtents(border);
 		endPosition = new Vector3(visibleX.min, altitude.RandomValue, distance);
-        sequenceEndX = sequenceLength.RandomValue;
+        sequenceEndX = singleSequenceStart ? visibleX.max : endPosition.x + sequenceLength.RandomValue;
 
 		leftmost = rightmost = GetInstance();
 		endPosition = rightmost.PlaceAfter(endPosition);
@@ -76,8 +83,20 @@ public class SkylineGenerator : MonoBehaviour
 			rightmost.FillGap(endPosition, gap);
 		}
 		endPosition.x += gap;
-		endPosition.y = altitude.RandomValue;
+		//endPosition.y = altitude.RandomValue;
 		sequenceEndX = endPosition.x + sequence;
+
+        if (maxYDifference > 0f)
+		{
+			endPosition.y = new FloatRange(
+				Mathf.Max(endPosition.y - maxYDifference, altitude.min),
+				Mathf.Min(endPosition.y + maxYDifference, altitude.max)
+			).RandomValue;
+		}
+		else
+		{
+			endPosition.y = altitude.RandomValue;
+		}
 	}
 
 }

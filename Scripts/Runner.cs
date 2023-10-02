@@ -9,13 +9,23 @@ public class Runner : MonoBehaviour
 	ParticleSystem explosionSystem, trailSystem;
 
 	[SerializeField, Min(0f)]
-	float startSpeedX = 5f, jumpAcceleration = 100f, gravity = 40f;
+	float startSpeedX = 5f,maxSpeedX = 40f, jumpAcceleration = 100f, gravity = 40f;
 
 	[SerializeField]
 	FloatRange jumpDuration = new FloatRange(0.1f, 0.2f);
 
     [SerializeField, Min(0f)]
 	float extents = 0.5f;	
+
+	[SerializeField]
+	AnimationCurve runAccelerationCurve;
+
+	[SerializeField, Min(0f)]
+	float spinDuration = 0.75f;
+
+	float spinTimeRemaining;
+
+	Vector3 spinRotation;
 
     MeshRenderer meshRenderer;
 
@@ -26,6 +36,12 @@ public class Runner : MonoBehaviour
 	float jumpTimeRemaining;
 	
 	public Vector2 Position => position;
+
+	public float SpeedX
+	{
+		get => velocity.x;
+		set => velocity.x = value;
+	}
 
 	void Awake ()
 	{
@@ -43,7 +59,7 @@ public class Runner : MonoBehaviour
 		}
 
 		position = new Vector2(0f, currentObstacle.GapY.min + extents);
-		transform.localPosition = position;
+		transform.SetPositionAndRotation(position, Quaternion.identity);
 		meshRenderer.enabled = true;
 		pointLight.enabled = true;
 		explosionSystem.Clear();
@@ -54,6 +70,7 @@ public class Runner : MonoBehaviour
 		transitioning = false;
 		grounded = true;
 		jumpTimeRemaining = 0f;
+		spinTimeRemaining = 0f;
 		velocity = new Vector2(startSpeedX, 0f);
 	}
 
@@ -107,7 +124,8 @@ public class Runner : MonoBehaviour
 		}
 		return true;
 	}
-		void Move (float dt)
+	
+	void Move (float dt)
 	{
 		if (jumpTimeRemaining > 0f)
 		{
@@ -119,7 +137,14 @@ public class Runner : MonoBehaviour
 			velocity.y -= gravity * dt;
 		}
 
-		grounded = false;
+		if (grounded)
+		{
+			velocity.x = Mathf.Min(
+				velocity.x + runAccelerationCurve.Evaluate(velocity.x / maxSpeedX) * dt,
+				maxSpeedX
+			);
+			grounded = false;
+		}
 		position += velocity * dt;
 	}
 
@@ -139,6 +164,7 @@ public class Runner : MonoBehaviour
 			velocity.y = Mathf.Min(velocity.y, 0f);
 			jumpTimeRemaining = 0f;
 		}
+		obstacle.Check(this);
 	}
 
 	bool CheckCollision ()
@@ -165,6 +191,12 @@ public class Runner : MonoBehaviour
 		if (grounded)
 		{
 			jumpTimeRemaining = jumpDuration.max;
+			if (spinTimeRemaining <= 0f)
+			{
+				spinTimeRemaining = spinDuration;
+				spinRotation = Vector3.zero;
+				spinRotation[Random.Range(0, 3)] = Random.value < 0.5f ? -90f : 90f;
+			}
 		}
 	}
 
@@ -173,5 +205,12 @@ public class Runner : MonoBehaviour
     public void UpdateVisualization ()
 	{
 		transform.localPosition = position;
+		if (spinTimeRemaining > 0f)
+		{
+			spinTimeRemaining = Mathf.Max(spinTimeRemaining - Time.deltaTime, 0f);
+			transform.localRotation = Quaternion.Euler(
+				Vector3.Lerp(spinRotation, Vector3.zero, spinTimeRemaining / spinDuration)
+			);
+		}
 	}
 }

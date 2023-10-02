@@ -5,6 +5,9 @@ public class TrackingCamera : MonoBehaviour
     [SerializeField]
 	ParticleSystem stars;
 
+	[SerializeField]
+	AnimationCurve yCurve;
+
 	Vector3 offset, position;
     float viewFactorX;
 
@@ -22,7 +25,8 @@ public class TrackingCamera : MonoBehaviour
 		shape.position = position;
 		shape.scale = new Vector3(2f * viewFactorX, viewFactorY) * position.z;
 	}
-    	public void StartNewGame ()
+    
+	public void StartNewGame ()
 	{
 		Track(Vector3.zero);
 	}
@@ -30,9 +34,10 @@ public class TrackingCamera : MonoBehaviour
 	public void Track (Vector3 focusPoint)
 	{
 		position = focusPoint + offset;
+		position.y = yCurve.Evaluate(position.y);
 		transform.localPosition = position;
-        stars.Clear();
-		stars.Emit(stars.main.maxParticles);
+        //stars.Clear();
+		//stars.Emit(stars.main.maxParticles);
 	}
 
     public FloatRange VisibleX (float z) =>

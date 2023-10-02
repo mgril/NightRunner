@@ -49,6 +49,8 @@ public class SkylineObject : MonoBehaviour
 		return position;
 	}
 
+	public virtual void Check (Runner runner) { }
+
     public SkylineObject GetInstance ()
 	{
 		if (pool == null)
